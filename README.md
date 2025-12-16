@@ -13,7 +13,6 @@ A cross-platform desktop application for controlling camera gimbals using natura
 
 ## Screenshots
 
-*[Add screenshots of your application here]*
 
 ## Prerequisites
 
