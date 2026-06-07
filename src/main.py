@@ -17,6 +17,13 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 
+# Load .env before config reads environment variables
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Application imports
 from core.config import Config
 from core.gimbal_controller import GimbalController

@@ -1,9 +1,14 @@
 # Environment and secrets
 .env
 *.env
+.env.local
+.env.*.local
 config.local.py
 *.key
 *.pem
+
+# Claude Code / Claude AI assistant files
+.claude/
 
 # Logs
 *.log
@@ -79,4 +84,11 @@ htmlcov/
 *.temp
 ~*
 
+# Dev scratch files
 prompt.txt
+
+# Runtime / generated assets (3D model cache, downloaded resources)
+assets/models/
+assets/*.bin
+assets/*.glb
+assets/*.glTF
