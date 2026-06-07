@@ -1,14 +1,14 @@
 # Gimbal LLM Control
 
-A cross-platform desktop application that lets you control a camera gimbal and pilot a drone entirely through natural language. Type a command like *"take off, fly forward, then track the orange car"* and the LLM translates it into precise PTZ motor instructions and physics-based flight manoeuvres — rendered live in a 3D OpenGL scene at 60 fps.
+A cross-platform desktop application for controlling a PTZ camera gimbal and piloting a drone through natural language commands, powered by Large Language Models. Type a plain-English instruction and the system interprets it, routes it to the correct subsystem, and executes it in real time — rendered live in a 3D OpenGL scene at 60 fps.
 
-Built as an AI-engineering portfolio project demonstrating real-time LLM integration, physics simulation, and hardware-ready motor control output.
+Developed in association with **KWF — Kashmir World Foundation.**
 
 ---
 
-## Demo
+## Screenshot
 
-> *Screenshots / GIF coming soon — run `python src/main.py` to see it live.*
+![Gimbal LLM Control](docs/Screenshot%202026-06-07%20183309.png)
 
 ---
 
@@ -16,8 +16,8 @@ Built as an AI-engineering portfolio project demonstrating real-time LLM integra
 
 ### Natural Language Control
 - Type any free-form command — the LLM interprets intent and routes it to the correct subsystem
-- Live **scene context** (drone GPS position, all entity positions, current gimbal angles) is injected into every LLM call so the model always knows the world state
-- Three-tier fallback: **OpenRouter** (cloud) → **Ollama** (local) → **keyword/regex parser** (fully offline)
+- Live **scene context** (drone GPS position, all entity positions, current gimbal angles, zoom level) is injected into every LLM call so the model always knows the current world state
+- Three-tier fallback: **OpenRouter** (cloud) → **Ollama** (local) → **keyword/regex parser** (fully offline, no internet required)
 
 ### PTZ Gimbal
 | Axis | Range | PWM Signal |
@@ -26,33 +26,34 @@ Built as an AI-engineering portfolio project demonstrating real-time LLM integra
 | Tilt | ±90°  | 1000–2000 µs @ 50 Hz |
 | Zoom | 1×–30× | 1000–2000 µs @ 50 Hz |
 
-- Smooth motor interpolation every frame (configurable speed 1–10)
-- Real-time PWM value display in the status panel
+- Smooth motor interpolation every frame at configurable speed (1–10)
+- Real-time PWM value display with visual bar graphs in the status panel
 
-### Drone Autopilot (Physics Engine)
-- Starts on the ground — command it to take off and explore
-- **Commands:** takeoff, land, hover, move (forward/back/left/right), ascend, descend, yaw, circle/orbit
-- **GPS navigation:** `drone_goto_gps` converts real-world coordinates (decimal degrees) to scene XYZ
-- Smooth waypoint-based navigation with natural acceleration and braking
-- Orbit mode with automatic inward-banking heading
+### Drone Controller (Physics Engine)
+- Starts on the ground — command it to take off and fly
+- **Flight commands:** takeoff, land, hover, move (forward / back / left / right), ascend, descend, yaw, circle/orbit
+- **GPS navigation:** converts real-world decimal degree coordinates to scene XYZ and navigates there
+- Smooth waypoint-based movement with natural acceleration and braking
+- Continuous orbit mode with automatic inward-banking heading
 - Scene bounds enforced with soft wall bounce
 
 ### Entity Tracking
-- Three entity types in the scene: **ground vehicles** (VH-01/02/03), **aerial UAVs** (UA-01/02/03), **birds** (BR-01/02)
-- `track <entity>` command locks the gimbal onto the nearest matching entity
-- **Coordinated tracking:** when gimbal reaches ±75° pan or ±55° tilt, the drone autonomously yaws / adjusts altitude to keep the target centred
+- Three entity types: **ground vehicles** (VH-01, VH-02, VH-03), **aerial UAVs** (UA-01, UA-02, UA-03), **birds** (BR-01, BR-02)
+- `track <entity>` command locks the gimbal onto the nearest matching entity in real time
+- **Coordinated tracking:** when the gimbal reaches its comfort limits (±75° pan / ±55° tilt), the drone autonomously yaws or adjusts altitude to keep the target centred without losing lock
 
 ### 3D OpenGL Renderer
-- Real-time scene at ~60 fps using PyOpenGL
-- Drone body, gimbal rod, and PTZ camera rendered in 3D
-- Dynamic field-of-view driven by zoom factor (60° wide → 2° telephoto)
-- **Import any `.obj` model** via *File → Import 3D Model* to hot-swap vehicles, UAVs, or birds at runtime
+- Real-time 3D scene at ~60 fps using PyOpenGL
+- Drone body, gimbal rod, and PTZ camera rendered with correct physical proportions
+- Dynamic field-of-view driven by zoom factor (60° wide angle → 2° telephoto)
+- Top-view compass overlay showing pan direction
+- **Import any `.obj` model** via *File → Import 3D Model* to hot-swap the mesh for vehicles, UAVs, or birds at runtime
 
 ### LLM Integration
-- **OpenRouter** — access Claude, GPT-4o, Gemini, Llama, Mistral, Kimi K2, and more from one API key
-- **Ollama** — fully local inference; tested with `llama3.2:1b` and other models
-- **In-app model switcher** — live fetches the OpenRouter catalogue and lets you swap models mid-session
-- Async processing (non-blocking UI with visual busy indicator)
+- **OpenRouter** — access Claude, GPT-4o, Gemini, Llama, Mistral, Kimi K2, and more from a single API key
+- **Ollama** — fully local inference, no internet connection needed; tested with `llama3.2:1b`
+- **In-app model switcher** — live-fetches the OpenRouter model catalogue and lets you swap models mid-session without restarting
+- All LLM calls are processed on a background thread — the UI never blocks
 
 ---
 
@@ -63,13 +64,13 @@ gimbal-llm-control/
 ├── src/
 │   ├── main.py                    # Entry point — GimbalApplication(QApplication)
 │   ├── core/
-│   │   ├── config.py              # Config dataclass, env var loading
+│   │   ├── config.py              # Config dataclass, environment variable loading
 │   │   ├── gimbal_controller.py   # PTZ motor logic, PWM output, smooth interpolation
-│   │   └── drone_autopilot.py     # Physics-based drone — waypoints, orbit, GPS nav
+│   │   └── drone_autopilot.py     # Physics drone — waypoints, orbit, GPS navigation
 │   ├── gui/
-│   │   ├── main_window.py         # Wires all subsystems; 60 fps tick loop
-│   │   ├── control_panel.py       # LLM input, manual buttons, model selector
-│   │   ├── status_panel.py        # PWM bars, gimbal angles, drone state
+│   │   ├── main_window.py         # Wires all subsystems; drives the 60 fps tick loop
+│   │   ├── control_panel.py       # NLP command input, manual buttons, model selector
+│   │   ├── status_panel.py        # PWM bar graphs, gimbal angles, drone state
 │   │   └── model_dialog.py        # LLM model-switching dialog
 │   ├── graphics/
 │   │   ├── renderer.py            # QOpenGLWidget — 3D scene, entity drawing, FOV
@@ -77,6 +78,8 @@ gimbal-llm-control/
 │   │   └── obj_loader.py          # Wavefront OBJ parser for custom model import
 │   └── llm/
 │       └── llm_service.py         # LLMService — async worker, OpenRouter, Ollama, fallback
+├── docs/
+│   └── screenshot.png             # Application screenshot
 ├── assets/                        # Runtime model/texture cache (gitignored)
 ├── .env.example                   # Copy to .env and fill in your API keys
 ├── requirements.txt
@@ -92,8 +95,8 @@ gimbal-llm-control/
 | Python 3.10+ | 3.9 minimum; 3.11 recommended |
 | PyQt6 | GUI framework |
 | PyOpenGL | 3D rendering |
-| Ollama *(optional)* | For local LLM inference |
-| OpenRouter API key *(optional)* | For cloud LLM access |
+| Ollama *(optional)* | For local LLM inference without an API key |
+| OpenRouter API key *(optional)* | For cloud-based LLM access |
 
 ---
 
@@ -124,7 +127,7 @@ pip install -r requirements.txt
 ### 4. Configure environment variables
 ```bash
 cp .env.example .env
-# Edit .env and add your API keys
+# Open .env and add your API keys
 ```
 
 ### 5. (Optional) Set up Ollama for local LLM
@@ -151,14 +154,15 @@ python src/main.py
 **Drone flight**
 ```
 take off
-take off to 5 metres
-fly forward 10 metres quickly
+take off to 3 metres
+fly forward 5 metres
 circle clockwise with radius 4
 fly to GPS 51.50722 N 0.12750 W at 30 metres
+hover
 land
 ```
 
-**Gimbal control**
+**Gimbal / camera**
 ```
 pan right 45 degrees
 tilt up slowly
@@ -181,7 +185,7 @@ lock on to the blue vehicle
 
 ## Configuration
 
-All configuration is via environment variables in `.env`:
+All settings are loaded from the `.env` file:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -190,7 +194,7 @@ All configuration is via environment variables in `.env`:
 | `OPENROUTER_MODEL` | `anthropic/claude-sonnet-4-6` | Any model ID on OpenRouter |
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama server address |
 | `OLLAMA_MODEL` | `llama3.2:1b` | Local model name |
-| `HOME_LAT` / `HOME_LON` | `51.507` / `-0.128` | GPS reference origin for coordinate display |
+| `HOME_LAT` / `HOME_LON` | `51.507` / `-0.128` | GPS origin for real-world coordinate display |
 | `HOME_ALT_MSL` | `10.0` | Home altitude in metres MSL |
 
 ---
@@ -215,6 +219,11 @@ User input (text)
                                                └── GimbalRenderer    ──► OpenGL 3D scene (60 fps)
 ```
 
+**Signal flow:**
+- `LLMService.command_processed` → `MainWindow` dispatches by `action` field
+- `GimbalController.position_changed` → `StatusPanel` (PWM bars) + `GimbalRenderer` (FOV update)
+- `DroneAutoPilot.position_changed` → `GimbalRenderer` (drone XYZ) + `StatusPanel` (coordinates)
+
 ---
 
 ## LLM Action Reference
@@ -223,7 +232,7 @@ User input (text)
 |--------|-----------|-----------|
 | `pan` | Gimbal | `value` (°), `speed` |
 | `tilt` | Gimbal | `value` (°), `speed` |
-| `track` | Gimbal | `target_type` (vehicle/uav/bird) |
+| `track` | Gimbal | `target_type` (vehicle / uav / bird) |
 | `home` | Gimbal | — |
 | `stop` | Gimbal | — |
 | `camera_zoom` | Camera | `value` (delta ±) |
@@ -260,62 +269,52 @@ pyinstaller>=6.0.0
 python build/build.py
 ```
 
-Output is placed in `dist/`. PyInstaller bundles Python, PyQt6, and PyOpenGL into a single portable folder.
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m "Add your feature"`
-4. Push the branch: `git push origin feature/your-feature`
-5. Open a Pull Request
+Output is placed in `dist/`. PyInstaller bundles Python, PyQt6, and PyOpenGL into a single portable folder that runs without a Python installation.
 
 ---
 
 ## Project Aim
 
-This project was built to explore and demonstrate how Large Language Models can serve as a natural-language interface for real-time hardware control systems. The core idea is simple: instead of learning commands or using a joystick, a user should be able to describe what they want in plain English and have the system understand, interpret, and act on it — reliably and in real time.
+This project was built to demonstrate how Large Language Models can serve as a practical, real-time interface for hardware control systems — removing the need for memorising commands, learning interfaces, or operating joysticks.
 
-The simulation layer (physics drone, 3D scene, PTZ gimbal) was built to be a faithful stand-in for real hardware, with PWM output, GPS coordinate mapping, and motor interpolation all modelled as they would behave on actual equipment. This makes the transition from simulation to physical deployment straightforward — the control logic does not need to change, only the output layer.
+The core idea: a user describes what they want in plain English, and the system understands, interprets, and acts on it immediately. The simulation layer — physics drone, 3D OpenGL scene, PTZ gimbal with PWM output — is built to match real hardware behaviour as closely as possible. GPS coordinate mapping, motor interpolation, PWM signal generation, and servo speed control are all modelled as they would behave on physical equipment, making the path from simulation to real deployment a matter of swapping the output layer rather than rewriting the control logic.
 
-Beyond the technical implementation, this project is a proof of concept for **LLM-driven autonomous systems** — where the model is not just answering questions but actively controlling physical processes based on live environmental context. Every command the LLM processes includes the current drone position, gimbal angles, zoom level, and the GPS coordinates of every tracked entity in the scene. The model reasons over that state to produce the right action, not just pattern-match on the input text.
+Every LLM command is enriched with live scene context: the drone's current GPS position, heading, speed, gimbal pan/tilt/zoom angles, and the real-world coordinates of every tracked entity in the scene. The model reasons over this full state to produce the correct action — not just pattern-matching on keywords, but understanding spatial relationships and operating priorities.
 
 ---
 
 ## Future Expansions
 
 ### Real Hardware Integration
-- Serial/PWM output to Arduino or Raspberry Pi GPIO for physical gimbal control
-- MAVLink / ArduPilot / PX4 protocol support to replace the physics simulation with real drone telemetry
-- RC servo calibration per axis with configurable PWM min/max/centre
+- Serial/PWM output to Arduino or Raspberry Pi GPIO for physical gimbal motor control
+- MAVLink / ArduPilot / PX4 protocol support to connect to real drones and replace the physics simulation with live telemetry
+- Per-axis servo calibration with configurable PWM min/max/centre values
 
 ### Computer Vision
-- Live RTSP or USB camera feed integrated into the renderer
-- YOLO-based object detection to auto-detect and classify real-world targets
-- Optical flow stabilisation to smooth the gimbal against camera motion
+- Live RTSP or USB camera feed integrated directly into the renderer viewport
+- YOLO-based real-time object detection to auto-detect and classify targets in the camera frame
+- Optical flow stabilisation to compensate for gimbal vibration and camera motion
 
 ### Voice and Multimodal Input
-- Push-to-talk microphone input via Whisper (local or API)
-- Image-based commands — paste a frame and have the LLM describe and react to the scene
+- Push-to-talk microphone input via Whisper (local or API) for hands-free operation
+- Image-based commands — paste a camera frame and have the LLM describe the scene and issue corrective gimbal moves
 - MediaPipe hand-tracking for gesture-based pan/tilt control
 
 ### Mission Planning
 - Multi-step mission definition in plain English, decomposed into ordered command sequences by the LLM
-- Survey and mapping path generation over a GPS bounding box
-- Mission save/load as JSON for replay and sharing
+- Automated survey and mapping path generation over a defined GPS bounding box
+- Mission save and load as JSON for replay, sharing, and iteration
 
 ### Connectivity and Telemetry
-- REST API endpoint so external scripts or mobile apps can drive the system
-- WebSocket live telemetry stream for a browser-based dashboard
-- Full session recording and playback at 60 fps for debugging and demo
+- REST API endpoint so external scripts, mobile apps, or dashboards can issue commands
+- WebSocket live telemetry stream for a browser-based monitoring interface
+- Full session recording and playback at 60 fps for analysis and demonstration
 
 ### Simulation Improvements
-- IMU and vibration model for testing stabilisation algorithms
-- Multi-drone support — independently command multiple drones in the same scene
-- Dynamic weather effects including wind gusts and turbulence
-- Day/night lighting cycle matching real-world visibility conditions
+- IMU and vibration model for testing stabilisation algorithms under realistic noise conditions
+- Multi-drone support — spawn and independently command multiple drones in the same scene
+- Dynamic weather effects including wind gusts and turbulence affecting drone physics
+- Day/night lighting cycle with realistic visibility constraints
 
 ---
 
